@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../models/ingredient.dart';
+import '../providers/favorites_provider.dart';
 
 class MealDetailScreen extends StatefulWidget {
   final String mealId;
-  const MealDetailScreen({required this.mealId, Key? key}) : super(key: key);
+  const MealDetailScreen({required this.mealId, super.key});
 
   @override
   State<MealDetailScreen> createState() => _MealDetailScreenState();
@@ -35,42 +37,119 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (mealData == null) return const Center(child: CircularProgressIndicator());
+    if (mealData == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Loading...')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     final ingredients = getIngredients(mealData!);
 
     return Scaffold(
-      appBar: AppBar(title: Text(mealData!['strMeal'])),
+      appBar: AppBar(
+        title: Text(mealData!['strMeal']),
+        backgroundColor: Colors.green,
+        actions: [
+          Consumer<FavoritesProvider>(
+            builder: (context, provider, child) {
+              final isFav = provider.isFavorite(widget.mealId);
+              return IconButton(
+                icon: Icon(
+                  isFav ? Icons.favorite : Icons.favorite_border,
+                  color: isFav ? Colors.red : Colors.white,
+                ),
+                onPressed: () {
+                  provider.toggleFavorite(
+                    widget.mealId,
+                    mealData!['strMeal'],
+                    mealData!['strMealThumb'],
+                  );
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        isFav ? 'Removed from favorites' : 'Added to favorites',
+                      ),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.network(mealData!['strMealThumb']),
-            Padding(
-              padding: EdgeInsets.all(8),
-              child: Text(mealData!['strInstructions'] ?? ''),
+            Image.network(
+              mealData!['strMealThumb'],
+              width: double.infinity,
+              height: 250,
+              fit: BoxFit.cover,
             ),
             Padding(
-              padding: EdgeInsets.all(8),
+              padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: ingredients
-                    .map((i) => Text('${i.name}: ${i.measure}'))
-                    .toList(),
+                children: [
+                  Text(
+                    mealData!['strMeal'],
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Instructions:',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(mealData!['strInstructions'] ?? ''),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Ingredients:',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  ...ingredients.map((i) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle,
+                            size: 16, color: Colors.green),
+                        const SizedBox(width: 8),
+                        Text('${i.name}: ${i.measure}'),
+                      ],
+                    ),
+                  )),
+                  if (mealData!['strYoutube'] != null &&
+                      mealData!['strYoutube'] != '')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.play_arrow),
+                        label: const Text('Watch on YouTube'),
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('YouTube: ${mealData!['strYoutube']}'),
+                              duration: const Duration(seconds: 3),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
-            if (mealData!['strYoutube'] != null && mealData!['strYoutube'] != '')
-              Padding(
-                padding: EdgeInsets.all(8),
-                child: InkWell(
-                  child: Text(
-                    'Watch on YouTube',
-                    style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
-                  ),
-                  onTap: () {
-                    // You can use url_launcher here
-                  },
-                ),
-              ),
           ],
         ),
       ),
