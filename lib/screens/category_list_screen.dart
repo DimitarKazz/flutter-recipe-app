@@ -56,6 +56,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Recipe Categories'),
+        backgroundColor: Colors.green,
         actions: [
           IconButton(
             icon: const Icon(Icons.shuffle),

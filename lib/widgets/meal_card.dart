@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/meal.dart';
 
+
 class MealCard extends StatelessWidget {
   final Meal meal;
   final VoidCallback onTap;
